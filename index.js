@@ -14,7 +14,9 @@ const upload = multer();
 const port = process.env.PORT || 3000;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-const ai = new GoogleGenAI();
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+});
 
 app.use(express.json());
 
