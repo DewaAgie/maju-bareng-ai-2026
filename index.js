@@ -40,8 +40,8 @@ async function generateContentWithRetry(options, maxRetries = 3, initialDelay = 
     try {
       return await ai.models.generateContent(options);
     } catch (error) {
-      const isTransient = 
-        error.status === 503 || 
+      const isTransient =
+        error.status === 503 ||
         error.status === 429 ||
         error.statusCode === 503 ||
         error.statusCode === 429 ||
@@ -165,7 +165,7 @@ app.post('/api/chat', async (req, res) => {
       contents,
       config: {
         temperature: 0.9,
-        systemInstruction: "Jawab hanya menggunakan bahasa indonesia."
+        systemInstruction: "Reply the user's message using same language as user message."
       }
     });
 
@@ -173,16 +173,16 @@ app.post('/api/chat', async (req, res) => {
 
   } catch (e) {
     console.error(e);
-    const isUnavailable = 
-      e.status === 503 || 
+    const isUnavailable =
+      e.status === 503 ||
       e.statusCode === 503 ||
       e.message?.includes('503') ||
       e.message?.includes('UNAVAILABLE') ||
       e.message?.includes('high demand');
 
     if (isUnavailable) {
-      return res.status(503).json({ 
-        message: "Layanan Gemini sedang sibuk karena permintaan yang tinggi. Silakan coba sesaat lagi." 
+      return res.status(503).json({
+        message: "Layanan Gemini sedang sibuk karena permintaan yang tinggi. Silakan coba sesaat lagi."
       });
     }
     res.status(500).json({ message: e.message });
