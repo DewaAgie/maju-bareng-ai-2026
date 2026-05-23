@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  GYM_ADMIN
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum AttendanceMethod {
+  QR_CODE
+  BARCODE
+  MANUAL
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+// ─── Models ──────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role
+  fullName  String
+  phone     String?
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+  gymId     String?
+  gym       Gym?     @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([gymId])
+}
+
+model Gym {
+  id              String           @id @default(uuid())
+  name            String
+  address         String?
+  phone           String?
+  email           String?
+  logoUrl         String?
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  users           User[]
+  coaches         Coach[]
+  facilities      Facility[]
+  classes         Class[]
+  members         Member[]
+  membershipPlans MembershipPlan[]
+  promotions      Promotion[]
+  attendanceLogs  AttendanceLog[]
+}
+
+model Coach {
+  id              String          @id @default(uuid())
+  gymId           String
+  gym             Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  fullName        String
+  email           String?
+  phone           String?
+  bio             String?
+  specializations String[]
+  avatarUrl       String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  classSchedules  ClassSchedule[]
+
+  @@index([gymId])
+}
+
+model Facility {
+  id             String          @id @default(uuid())
+  gymId          String
+  gym            Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  capacity       Int?
+  imageUrl       String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  classSchedules ClassSchedule[]
+
+  @@index([gymId])
+}
+
+model Class {
+  id              String          @id @default(uuid())
+  gymId           String
+  gym             Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  category        String
+  durationMinutes Int
+  maxCapacity     Int
+  imageUrl        String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  classSchedules  ClassSchedule[]
+
+  @@index([gymId])
+}
+
+model ClassSchedule {
+  id          String            @id @default(uuid())
+  classId     String
+  class       Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  coachId     String
+  coach       Coach             @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  facilityId  String
+  facility    Facility          @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  dayOfWeek   DayOfWeek
+  startTime   String
+  endTime     String
+  isRecurring Boolean           @default(true)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  enrollments ClassEnrollment[]
+
+  @@index([classId])
+  @@index([coachId])
+  @@index([facilityId])
+}
+
+model ClassEnrollment {
+  id         String           @id @default(uuid())
+  scheduleId String
+  schedule   ClassSchedule    @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime         @default(now())
+  status     EnrollmentStatus @default(ACTIVE)
+
+  @@index([scheduleId])
+  @@index([memberId])
+}
+
+model MembershipPlan {
+  id                String              @id @default(uuid())
+  gymId             String
+  gym               Gym                 @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  durationDays      Int
+  price             Float
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  benefits          MembershipBenefit[]
+  memberMemberships MemberMembership[]
+
+  @@index([gymId])
+}
+
+model MembershipBenefit {
+  id               String         @id @default(uuid())
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Cascade)
+  description      String
+
+  @@index([membershipPlanId])
+}
+
+model Member {
+  id                String             @id @default(uuid())
+  gymId             String
+  gym               Gym                @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  fullName          String
+  email             String             @unique
+  phone             String?
+  gender            String?
+  dateOfBirth       DateTime?
+  avatarUrl         String?
+  qrCode            String             @unique
+  barcodeValue      String             @unique
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  memberMemberships MemberMembership[]
+  attendanceLogs    AttendanceLog[]
+  classEnrollments  ClassEnrollment[]
+
+  @@index([gymId])
+  @@index([email])
+  @@index([qrCode])
+  @@index([barcodeValue])
+}
+
+model MemberMembership {
+  id               String           @id @default(uuid())
+  memberId         String
+  member           Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  membershipPlanId String
+  membershipPlan   MembershipPlan   @relation(fields: [membershipPlanId], references: [id], onDelete: Cascade)
+  startDate        DateTime
+  endDate          DateTime
+  status           MembershipStatus @default(ACTIVE)
+  createdAt        DateTime         @default(now())
+
+  @@index([memberId])
+  @@index([membershipPlanId])
+}
+
+model AttendanceLog {
+  id        String           @id @default(uuid())
+  memberId  String
+  member    Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gymId     String
+  gym       Gym              @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  checkInAt DateTime         @default(now())
+  method    AttendanceMethod
+  notes     String?
+
+  @@index([memberId])
+  @@index([gymId])
+  @@index([checkInAt])
+}
+
+model Promotion {
+  id               String       @id @default(uuid())
+  gymId            String
+  gym              Gym          @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  discountType     DiscountType
+  discountValue    Float
+  startDate        DateTime
+  endDate          DateTime
+  imageUrl         String?
+  isActive         Boolean      @default(true)
+  membershipPlanId String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([gymId])
+}
