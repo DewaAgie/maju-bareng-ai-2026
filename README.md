@@ -74,10 +74,16 @@ GymCore is a modern, full-stack Gym Management System built with React, Node.js,
     ```
 3.  Configure environment variables:
     - Copy `.env.example` to `.env`
-4.  Start the development server:
+4.  Configure your gym ID:
+    - Set your gym id in `frontend/.env`
+    - You can find your gym id in table `Gym` on your database after running `npm run seed`
+5.  Start the development server:
+
     ```bash
     npm run dev
+
     ```
+
     _The app will run on `http://localhost:5173`_
 
 ---
